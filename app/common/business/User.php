@@ -34,7 +34,7 @@ class User
 
 //        判断表是否有当前登录用户数据
         $user = $this->userObj->getUserByPhoneNumber($data['phone_number']);
-//        没有用户信息则新建移交用户数据
+//        没有用户信息则新建用户数据
         if (empty($user)){
             $username = "yunce-".$data['phone_number'];
             $data = [
