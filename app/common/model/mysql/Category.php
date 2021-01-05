@@ -12,7 +12,7 @@ class Category extends Model
     protected $autoWriteTimestamp = true;
 
     /**
-     * 根据分类名称和pid获取数据
+     * 根据分类名称获取数据
      * @param $data
      * @return array|bool|Model|null
      * @throws \think\db\exception\DataNotFoundException
@@ -24,7 +24,6 @@ class Category extends Model
             return false;
         }
         $where = [
-            "pid" => $data['pid'],
             "name" => $data['name']
         ];
         $result = $this->where($where)->find();
@@ -38,7 +37,14 @@ class Category extends Model
         $where = [
             'status' => config("status.mysql.table_normal")
         ];
-        $result = $this->where($where)->field($fileds)->select();
+        $order = [
+            'listorder' => 'asc',
+            'id' => 'asc'
+        ];
+        $result = $this->where($where)
+            ->field($fileds)
+            ->order($order)
+            ->select();
         if (!$result){
             return [];
         }
@@ -62,6 +68,91 @@ class Category extends Model
             ->where($where)
             ->order($order)
             ->paginate($num);
+        return $result;
+    }
+
+    /**
+     * 获取子栏目总数
+     * @param $pids
+     */
+    public function getChildLists($pids){
+        if (empty($pids)){
+            return [];
+        }
+        $where[] = [
+            'pid','in',$pids
+        ];
+        $where[] = [
+            'status','<>',config("status.mysql.table_delete")
+        ];
+        $result = $this->where($where)
+            ->field(['pid','count(*) as count'])
+            ->group('pid')
+            ->select();
+        return $result;
+    }
+
+    /**
+     * 更新分类排序数值
+     * @param $data
+     */
+    public function updateOrderList($data){
+        $save_data = [
+            'listorder' => $data['orderlist'],
+            'update_time' => time()
+        ];
+        $result = $this->where('id',$data['id'])->save($save_data);
+        return $result;
+    }
+
+    /**
+     * 更新分类排序数值
+     * @param $data
+     */
+    public function changeStatus($data){
+        $save_data = [
+            'status' => $data['status'],
+            'update_time' => time()
+        ];
+        $result = $this->where('id',$data['id'])->save($save_data);
+        return $result;
+    }
+
+    /**
+     * 删除分类信息
+     * @param $id
+     * @return bool
+     */
+    public function delCategory($id){
+        $save_data = [
+            'status' => config("status.mysql.table_delete"),
+            'update_time' => time()
+        ];
+        $result = $this->where('id',$id)->save($save_data);
+        return $result;
+    }
+
+    /**
+     * 获取父类分类信息
+     * @param $id
+     */
+    public function getParentById($id){
+        $where = [
+            'id' => $id
+        ];
+        $result = $this->where($where)->find();
+        return $result;
+    }
+
+    public function editSave($data){
+        $where = [
+            'id' => $data['id']
+        ];
+        $save_data = [
+            'name' => $data['name'],
+            'update_time' => time()
+        ];
+        $result = $this->where($where)->save($save_data);
         return $result;
     }
 }

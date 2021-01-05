@@ -82,7 +82,7 @@
                     </td>
 
                     <td data-id="{$vo.id}"><input type="checkbox" {if $vo.status == 1}checked {/if} name="status" lay-skin="switch"
-                                           lay-filter="switchTest"
+                                           lay-filter="switchStatus"
                                            lay-text="ON|OFF">
                     </td>
 
@@ -90,7 +90,9 @@
                     <td>
                         <a class="layui-btn layui-btn-xs layui-btn-danger data-count-delete del-child" data-ptype="1"
                            lay-event="delete" data-id="{$vo.id}}">删除</a>
-                        <a href="{:url('index',['pid'=>$vo.id])}">获取子栏目</a>
+                        <a class="layui-btn layui-btn-xs layui-btn-warm data-count-delete edit" data-ptype="1"
+                           lay-event="edit" data-id="{$vo.id}}">编辑</a>
+                        <a class="layui-btn layui-btn-xs layui-btn-normal" href="{:url('index',['pid'=>$vo.id])}">子栏目({$vo.childCount})</a>
                     </td>
                 </tr>
                 {/foreach}
@@ -130,7 +132,7 @@
             , curr: {$categoryLists.current_page}
             , jump: function (obj,first) {
                 if (!first){
-                    location.href="?page="+obj.curr
+                    location.href="?page="+obj.curr+"&pid={$pid}"
                 }
             }
         });
@@ -141,16 +143,26 @@
             layObj.dialog("{:url('add')}")
         });
 
+        // 编辑 分类
+        $('.edit').on('click', function () {
+            let id = $(this).attr('data-id');
+            layObj.dialog("{:url('edit')}?id="+id)
+        });
+
         //监听状态 更改
-        form.on('switch(switchTest)', function (obj) {
+        form.on('switch(switchStatus)', function (obj) {
             console.log(obj.elem.checked, '改变状态')
 
             let id = obj.othis.parent().attr('data-id');
             let status = obj.elem.checked ? 1 : 0;
             $.ajax({
-                url: '{:url("admin/change")}?id=' + id + '&status=' + status,
+                url: '{:url("changeStatus")}?id=' + id + '&status=' + status,
                 success: (res) => {
-
+                    if (res.status == 1){
+                        window.location.reload();
+                    }else {
+                        layer.msg(res.message)
+                    }
                 }
             });
             return false;
@@ -183,18 +195,16 @@
 
         // 删除二级分类
         $('.del-child').on('click', function () {
-            let ptype = $(this).attr('data-ptype'); // fu
             let id = $(this).attr('data-id'); // fu
-            let msg = '';
-            if (ptype == 1) { // 等级类目
-                msg = '一';
-            } else if (ptype == 2) {
-                msg = '二';
-            }
-            layObj.box(`是否删除${msg}级分类`, () => {
-                let   url = '{:url("admin/del")}?id=' + id
+
+            layObj.box(`是否删除当前分类`, () => {
+                let   url = '{:url("del")}?id=' + id
                 layObj.get(url,  (res) =>{
-                    $(this).parent().remove()
+                    if (res.status == 1){
+                        window.location.reload();
+                    }else {
+                        layer.msg(res.message)
+                    }
                 })
 
             })
@@ -207,10 +217,14 @@
             if(!val){
                 return;
             }
-            let url = '{:url("admin/sort")}?id=' + id + '&sort='+val;
+            let url = '{:url("orderlist")}?id=' + id + '&orderlist='+val;
             // let url = 'http:www.baidu.com';
             layObj.get(url,function (res) {
-                console.log(res, 'sort');
+                if (res.status == 1){
+                    window.location.reload();
+                }else {
+                    layer.msg(res.message)
+                }
             })
 
         })
